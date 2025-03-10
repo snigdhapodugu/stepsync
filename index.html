@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walking Therapy Visualization</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- D3.js for visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- OpenCV.js -->
+    <script async src="https://docs.opencv.org/master/opencv.js" onload="onOpenCvReady();" type="text/javascript"></script>
+    <!-- MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Physical Therapy From Your Own Home</h1>
+        </header>
+        
+        <!-- Step content moved to top -->
+        <div class="step-content">
+            <div class="step" id="step1">
+                <h2>Welcome to Your Walking Journey</h2>
+                <div class="intro-content">
+                    <p class="intro-text">
+                        Welcome to an interactive guide that will help you understand and improve your walking mechanics. 
+                        This tool uses advanced motion tracking to analyze your movement and provide real-time feedback.
+                    </p>
+                    <p class="intro-highlight">
+                        On the left, you can see a reference model demonstrating proper walking form. 
+                        Watch how different body parts work together to create smooth, efficient movement.
+                    </p>
+                    <div class="intro-features">
+                        <h3>What You'll Learn:</h3>
+                        <ul>
+                            <li>Proper foot placement and movement patterns</li>
+                            <li>Knee and hip alignment during walking</li>
+                            <li>Core stability and posture</li>
+                            <li>Upper body coordination</li>
+                            <li>Overall balance and rhythm</li>
+                        </ul>
+                    </div>
+                    <p class="intro-next">
+                        Click 'Next' to begin your step-by-step analysis, where you'll be able to compare your 
+                        movement with the reference model using your camera.
+                    </p>
+                </div>
+            </div>
+            <div class="step" id="step2" style="display: none;">
+                <h2>Foot Movement</h2>
+                <p>Proper foot placement and movement is the foundation of walking. Watch the visualization to understand heel strike and toe-off phases.</p>
+                <ul>
+                    <li><strong>Heel Strike:</strong> The heel makes initial contact with the ground</li>
+                    <li><strong>Midstance:</strong> Weight transfers through the foot</li>
+                    <li><strong>Toe-Off:</strong> Push-off from the toes propels the body forward</li>
+                </ul>
+            </div>
+            <div class="step" id="step3" style="display: none;">
+                <h2>Knee Movement</h2>
+                <p>The knee plays a crucial role in shock absorption and propulsion during walking.</p>
+                <ul>
+                    <li><strong>Flexion:</strong> Bending of the knee during early stance for shock absorption</li>
+                    <li><strong>Extension:</strong> Straightening of the knee in late stance for stability</li>
+                    <li><strong>Swing Phase:</strong> Controlled flexion to clear the foot from the ground</li>
+                </ul>
+            </div>
+            <div class="step" id="step4" style="display: none;">
+                <h2>Hip Movement</h2>
+                <p>Hip movement controls stride length and maintains balance during walking.</p>
+                <ul>
+                    <li><strong>Flexion/Extension:</strong> Forward and backward movement</li>
+                    <li><strong>Rotation:</strong> Internal and external rotation during the gait cycle</li>
+                    <li><strong>Stability:</strong> Pelvis control for maintaining level walking</li>
+                </ul>
+            </div>
+            <div class="step" id="step5" style="display: none;">
+                <h2>Core Stability</h2>
+                <p>A stable core helps maintain proper posture and balance throughout the walking cycle.</p>
+                <ul>
+                    <li><strong>Trunk Control:</strong> Minimal lateral sway during walking</li>
+                    <li><strong>Spinal Alignment:</strong> Maintaining good posture during movement</li>
+                    <li><strong>Weight Shifting:</strong> Controlled transfer of weight from side to side</li>
+                </ul>
+            </div>
+            <div class="step" id="step6" style="display: none;">
+                <h2>Upper Body Movement</h2>
+                <p>Arm swing helps maintain balance and efficiency during walking.</p>
+                <ul>
+                    <li><strong>Counter-rotation:</strong> Arms move opposite to the legs</li>
+                    <li><strong>Shoulder Movement:</strong> Natural swing for balance</li>
+                    <li><strong>Energy Conservation:</strong> Efficient arm movement reduces energy expenditure</li>
+                </ul>
+            </div>
+            <div class="step" id="step7" style="display: none;">
+                <h2>Balance and Coordination</h2>
+                <p>All components working together create a smooth, efficient walking pattern.</p>
+                <ul>
+                    <li><strong>Timing:</strong> Synchronized movement of all body parts</li>
+                    <li><strong>Rhythm:</strong> Consistent, even pace</li>
+                    <li><strong>Adaptation:</strong> Ability to adjust to different surfaces and environments</li>
+                </ul>
+                <p>Practice with the camera feature to see how your movement compares to the reference model.</p>
+            </div>
+        </div>
+
+        <!-- Visualization and camera container -->
+        <div class="main-content">
+            <div class="visualization-container">
+                <div id="reference-vis" class="skeleton-vis">
+                    <h3>Reference Movement</h3>
+                </div>
+            </div>
+            <div class="camera-container" style="display: none;">
+                <video id="camera-feed" autoplay playsinline></video>
+                <canvas id="pose-canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="back-btn" disabled>Back</button>
+            <button id="try-it-btn">Try It!</button>
+            <button id="next-btn">Next</button>
+        </div>
+    </div>
+    <script>
+    function onOpenCvReady() {
+        console.log('OpenCV.js is ready');
+        window.isOpenCvReady = true;
+        window.dispatchEvent(new Event('opencv-ready'));
+    }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
