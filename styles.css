@@ -142,7 +142,7 @@ header h1 {
     display: flex;
     gap: 20px;
     margin-bottom: 50px;
-    margin-top: 25px;
+    /* margin-top: 25px; */
 }
 
 /* Visualization container */
@@ -153,7 +153,6 @@ header h1 {
     width: 100%;
     min-height: 500px;
     margin: 20px 0;
-    /* margin-top: 25px; */
 }
 
 /* Camera container */
@@ -171,10 +170,6 @@ header h1 {
     flex-direction: column;
     position: relative;
 }
-
-/* #reference-vis {
-    margin-top: 25px;
-} */
 
 .camera-container:hover {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -197,9 +192,9 @@ header h1 {
     padding: 20px;
     height: 100%;
     min-width: 500px;
-    /* margin-top: 25px; */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
+    /* margin-top: 0px; */
 }
 
 .skeleton-vis:hover {
