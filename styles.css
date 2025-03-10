@@ -152,7 +152,7 @@ header h1 {
     justify-content: space-between;
     width: 100%;
     min-height: 500px;
-    margin: 20px 0;
+    margin: 0;
 }
 
 /* Camera container */
@@ -194,7 +194,7 @@ header h1 {
     min-width: 500px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
-    /* margin-top: 0px; */
+    margin: 0;
 }
 
 .skeleton-vis:hover {
