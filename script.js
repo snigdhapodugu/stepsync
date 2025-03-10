@@ -9,6 +9,8 @@ let animationFrame = null;
 let currentFrameIndex = 0;
 let poseDetector = null;
 let isPlaying = false;
+let selectedParticipant = null;
+let participantMetadata = [];
 
 // Global variables for OpenCV processing
 let lastFrame = null;
@@ -54,17 +56,6 @@ const focusRegions = {
     7: null // Full body for balance and coordination
 };
 
-// Load reference data
-console.log('Loading reference data...');
-d3.csv('aligned_skeleton_2d_gait.csv').then(data => {
-    referenceData = data;
-    console.log(`Reference data loaded: ${data.length} frames`);
-    initializeVisualizations();
-    updateVisualization(currentFrameIndex);
-}).catch(error => {
-    console.error('Error loading reference data:', error);
-});
-
 // Initialize D3 visualizations
 function initializeVisualizations() {
     // Update layout to place visualizations side by side
@@ -72,15 +63,35 @@ function initializeVisualizations() {
     container.style.display = 'flex';
     container.style.flexDirection = 'row';
     container.style.justifyContent = 'space-between';
+    container.style.gap = '20px';
     
-    const width = document.querySelector('.skeleton-vis').clientWidth;
-    const height = document.querySelector('.skeleton-vis').clientHeight;
+    // Set fixed dimensions for visualizations
+    const width = 500;  // Fixed width
+    const height = 400; // Fixed height
     
+    // Create titles and containers for both visualizations
     ['reference', 'user'].forEach(type => {
+        const visContainer = document.getElementById(`${type}-vis`);
+        visContainer.style.flex = '1';
+        visContainer.style.minWidth = `${width}px`;
+        visContainer.style.display = 'flex';
+        visContainer.style.flexDirection = 'column';
+        visContainer.style.alignItems = 'center';
+        
+        // Add title
+        const title = document.createElement('h3');
+        // title.textContent = type === 'reference' ? 'Reference Movement' : 'Your Movement';
+        title.style.textAlign = 'center';
+        title.style.marginBottom = '15px';
+        title.style.color = '#3498db';
+        visContainer.appendChild(title);
+        
         const svg = d3.select(`#${type}-vis`)
             .append('svg')
             .attr('width', width)
-            .attr('height', height);
+            .attr('height', height)
+            .style('display', 'block')
+            .style('margin', '0 auto');
             
         svg.append('g')
             .attr('class', 'skeleton')
@@ -94,15 +105,26 @@ function startAnimation() {
         cancelAnimationFrame(animationFrame);
     }
     
-    function animate() {
-        updateVisualization(currentFrameIndex);
-        currentFrameIndex = (currentFrameIndex + 1) % referenceData.length;
+    const frameDelay = 20; // 100ms delay between frames (10 frames per second)
+    let lastFrameTime = 0;
+    
+    function animate(currentTime) {
+        if (!lastFrameTime) lastFrameTime = currentTime;
+        
+        const elapsed = currentTime - lastFrameTime;
+        
+        if (elapsed > frameDelay) {
+            updateVisualization(currentFrameIndex);
+            currentFrameIndex = (currentFrameIndex + 1) % referenceData.length;
+            lastFrameTime = currentTime;
+        }
+        
         if (isPlaying) {
             animationFrame = requestAnimationFrame(animate);
         }
     }
     
-    animate();
+    animate(0);
 }
 
 // Update visualization based on current frame and step
@@ -204,6 +226,31 @@ function updateSkeletonVisualization(selector, data, scale, centerX, centerY, fo
     
     // Clear previous frame
     svg.selectAll('*').remove();
+    
+    // Use selected participant's measurements
+    const measurements = selectedParticipant ? {
+        height: parseFloat(selectedParticipant['Body height (m)']),
+        shoulderWidth: parseFloat(selectedParticipant['Shoulder Width']),
+        armSpan: parseFloat(selectedParticipant['Arm Span']),
+        hipWidth: parseFloat(selectedParticipant['Hip Width']),
+        kneeHeight: parseFloat(selectedParticipant['Knee Height']),
+        ankleHeight: parseFloat(selectedParticipant['Ankle Height'])
+    } : {
+        height: 1.8,
+        shoulderWidth: 0.31,
+        armSpan: 1.74,
+        hipWidth: 0.27,
+        kneeHeight: 0.53,
+        ankleHeight: 0.1
+    };
+
+    // Calculate scaling factors based on measurements
+    const heightScale = measurements.height / 2;
+    const shoulderScale = measurements.shoulderWidth / 0.4;
+    const hipScale = measurements.hipWidth / 0.3;
+    
+    // Use the average of the scaling factors
+    const measurementScale = (heightScale + shoulderScale + hipScale) / 3;
     
     // Draw connections
     connections.forEach(([joint1, joint2]) => {
@@ -310,34 +357,77 @@ function getFocusOpacity(joint1, joint2, focusJoints) {
 
 // Handle step navigation
 function updateStep(direction) {
+    // If trying to go to next step without selecting a participant, prevent it
+    if (direction > 0 && !selectedParticipant) {
+        alert('Please select a matching participant first');
+        return;
+    }
+
     const prevStep = currentStep;
     currentStep = Math.max(1, Math.min(totalSteps, currentStep + direction));
     
     // Update button states
     document.getElementById('back-btn').disabled = currentStep === 1;
-    document.getElementById('next-btn').disabled = currentStep === totalSteps;
+    document.getElementById('next-btn').disabled = currentStep === totalSteps || (currentStep === 1 && !selectedParticipant);
     
     // Update step visibility
     document.getElementById(`step${prevStep}`).style.display = 'none';
     document.getElementById(`step${currentStep}`).style.display = 'block';
     
-    // Handle first page differently
+    // Handle visualization and try-it button based on step
     const tryItBtn = document.getElementById('try-it-btn');
+    const visualizationContainer = document.querySelector('.visualization-container');
+    const participantForm = document.getElementById('participant-selection');
+    const mainContent = document.querySelector('.main-content');
+    
     if (currentStep === 1) {
+        // First page: hide visualization, try-it button, and main content
         tryItBtn.style.display = 'none';
+        mainContent.style.display = 'none';
+        participantForm.style.display = 'block';
+        participantForm.style.opacity = '1';
+        
+        // Stop camera if recording
         if (isRecording) {
             stopCamera();
         }
+        
+        // Stop animation if playing
+        if (animationFrame) {
+            cancelAnimationFrame(animationFrame);
+            isPlaying = false;
+        }
+        
+        // Reset visualization container state
+        visualizationContainer.style.justifyContent = 'space-between';
+        document.getElementById('reference-vis').style.display = 'none';
+        document.getElementById('user-vis').style.display = 'none';
     } else {
+        // Other pages: show visualization, try-it button, and main content
         tryItBtn.style.display = 'inline-block';
-        // Automatically start camera for steps 2-7 (segments)
+        mainContent.style.display = 'flex';
+        visualizationContainer.style.display = 'flex';
+        participantForm.style.display = 'none';
+        
+        // Show reference visualization
+        document.getElementById('reference-vis').style.display = 'flex';
+        
+        // Initialize visualization if not already done
+        if (!document.querySelector('#reference-vis svg')) {
+            initializeVisualizations();
+            updateVisualization(currentFrameIndex);
+        }
+        
+        // Start camera for steps 2-7 if not already recording
         if (!isRecording) {
             toggleCamera();
         }
     }
     
     // Update visualization focus
-    updateVisualization(currentFrameIndex);
+    if (currentStep > 1) {
+        updateVisualization(currentFrameIndex);
+    }
 }
 
 // Camera handling
@@ -427,10 +517,23 @@ function stopCamera() {
         poseDetector = null;
     }
     
+    // Hide camera container
     document.querySelector('.camera-container').style.display = 'none';
+    
+    // Center the reference visualization
+    const visualizationContainer = document.querySelector('.visualization-container');
+    visualizationContainer.style.display = 'flex';
+    visualizationContainer.style.justifyContent = 'center';
+    visualizationContainer.style.alignItems = 'center';
+    
+    // Ensure reference visualization is centered
+    const referenceVis = document.getElementById('reference-vis');
+    referenceVis.style.display = 'flex';
+    referenceVis.style.flexDirection = 'column';
+    referenceVis.style.alignItems = 'center';
+    
     document.getElementById('try-it-btn').textContent = 'Try It!';
     isRecording = false;
-    document.getElementById('user-vis').style.display = 'none';
     
     // Clear canvas overlays
     const canvas = document.getElementById('pose-canvas');
@@ -627,9 +730,9 @@ function drawPoseOnCanvas(results, canvas) {
     const canvasHeight = canvas.height;
     
     // Set up styles - single color for all elements
-    const color = '#00ff00';
+    const color = '#3498db';
     
-    // Draw pose connections
+    // Draw pose connections (excluding face)
     const connections = [
         // Torso
         [11, 12], // shoulders
@@ -661,8 +764,11 @@ function drawPoseOnCanvas(results, canvas) {
     });
     ctx.stroke();
     
-    // Draw landmarks
+    // Draw landmarks (excluding face landmarks 0-10)
     landmarks.forEach((landmark, index) => {
+        // Skip facial landmarks (indices 0-10)
+        if (index <= 10) return;
+        
         if (landmark.visibility > 0.5) {
             const x = Math.round(landmark.x * canvasWidth);
             const y = Math.round(landmark.y * canvasHeight);
@@ -785,7 +891,7 @@ function createPlaybackControls() {
     
     // Play/Pause button
     const playBtn = document.createElement('button');
-    playBtn.textContent = '▶️';
+    playBtn.textContent = 'Play';
     playBtn.id = 'play-pause-btn';
     playBtn.addEventListener('click', togglePlayback);
     
@@ -813,14 +919,14 @@ function togglePlayback() {
     if (isPlaying) {
         // Start animation
         startAnimation();
-        playBtn.textContent = '⏸️';
+        playBtn.textContent = 'Pause';
     } else {
         // Pause animation
         if (animationFrame) {
             cancelAnimationFrame(animationFrame);
             animationFrame = null;
         }
-        playBtn.textContent = '▶️';
+        playBtn.textContent = 'Play';
     }
 }
 
@@ -831,14 +937,184 @@ document.getElementById('try-it-btn').addEventListener('click', toggleCamera);
 
 // Add window load event to ensure DOM is fully loaded
 window.addEventListener('load', () => {
-    // Create playback controls
+    // Load participant metadata first
+    loadParticipantMetadata();
+    
+    // Initialize participant selection form
+    initializeParticipantSelection();
+    
+    // Create playback controls (they'll be hidden initially)
     createPlaybackControls();
     
     // Initialize first page
     const tryItBtn = document.getElementById('try-it-btn');
     tryItBtn.style.display = 'none';
     document.getElementById('back-btn').disabled = true;
+    document.getElementById('next-btn').disabled = true;
+    
+    // Hide visualization container initially
+    document.querySelector('.visualization-container').style.display = 'none';
+    
+    // Ensure participant selection is visible on first load
+    const participantForm = document.getElementById('participant-selection');
+    if (participantForm) {
+        participantForm.style.display = 'block';
+        participantForm.style.opacity = '1';
+    }
     
     // Initialize
     updateStep(0);
 });
+
+// Function to calculate BMI
+function calculateBMI(weight, height) {
+    return weight / (height * height);
+}
+
+// Function to find closest participant based on gender and BMI
+function findClosestParticipant(gender, targetBMI) {
+    let closestParticipant = null;
+    let minBMIDiff = Infinity;
+
+    participantMetadata.forEach(participant => {
+        if (participant.Gender === gender) {
+            const participantBMI = calculateBMI(participant['Body mass (kg)'], participant['Body height (m)']);
+            const bmiDiff = Math.abs(participantBMI - targetBMI);
+            
+            if (bmiDiff < minBMIDiff) {
+                minBMIDiff = bmiDiff;
+                closestParticipant = participant;
+            }
+        }
+    });
+
+    return closestParticipant;
+}
+
+// Remove the createParticipantSelectionUI function and replace with a function to initialize the form
+function initializeParticipantSelection() {
+    const genderSelect = document.getElementById('gender-select');
+    const bmiInput = document.getElementById('bmi-input');
+    const findMatchBtn = document.getElementById('find-match-btn');
+    const participantForm = document.getElementById('participant-selection');
+    
+    // Add consistent styling to form elements
+    const formElements = [genderSelect, bmiInput, findMatchBtn];
+    formElements.forEach(element => {
+        element.style.cssText = `
+            width: 100%;
+            height: 45px;
+            padding: 0 15px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #e0e0e0;
+            background-color: white;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        `;
+    });
+
+    // Special styles for the button
+    findMatchBtn.style.cssText += `
+        background-color: #3498db;
+        color: white;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+    `;
+
+    // Add hover effects
+    findMatchBtn.onmouseover = () => {
+        findMatchBtn.style.backgroundColor = '#2980b9';
+        findMatchBtn.style.transform = 'translateY(-1px)';
+    };
+    findMatchBtn.onmouseout = () => {
+        findMatchBtn.style.backgroundColor = '#3498db';
+        findMatchBtn.style.transform = 'translateY(0)';
+    };
+
+    // Add focus styles for input and select
+    [genderSelect, bmiInput].forEach(element => {
+        element.onfocus = () => {
+            element.style.borderColor = '#3498db';
+            element.style.boxShadow = '0 0 0 3px rgba(52, 152, 219, 0.1)';
+        };
+        element.onblur = () => {
+            element.style.borderColor = '#e0e0e0';
+            element.style.boxShadow = 'none';
+        };
+    });
+
+    findMatchBtn.addEventListener('click', () => {
+        const gender = genderSelect.value;
+        const bmi = parseFloat(bmiInput.value);
+        
+        if (!gender || isNaN(bmi)) {
+            alert('Please select gender and enter a valid BMI');
+            return;
+        }
+
+        selectedParticipant = findClosestParticipant(gender, bmi);
+        if (selectedParticipant) {
+            loadParticipantData(selectedParticipant['Participant ID']);
+            // Just enable the next button, don't show visualization yet
+            document.getElementById('next-btn').disabled = false;
+            
+            // Show success message
+            const successMsg = document.createElement('p');
+            successMsg.textContent = 'Participant matched! Click Next to continue.';
+            successMsg.className = 'success-message intro-next';
+            successMsg.style.cssText = `
+                font-size: 1.1rem;
+                color: #2c3e50;
+                padding: 15px;
+                background-color: rgba(46, 204, 113, 0.1);
+                border-radius: 8px;
+                margin-top: 10px;
+                text-align: center;
+            `;
+            
+            // Remove any existing success message
+            const existingMsg = participantForm.querySelector('.success-message');
+            if (existingMsg) {
+                existingMsg.remove();
+            }
+            
+            participantForm.appendChild(successMsg);
+            findMatchBtn.style.display = 'none';
+        } else {
+            alert('No matching participant found. Please try different criteria.');
+        }
+    });
+}
+
+// Function to load participant data
+async function loadParticipantData(participantId) {
+    try {
+        // Load reference data for the selected participant
+        const data = await d3.csv(`${participantId}.csv`);
+        if (!data || data.length === 0) {
+            throw new Error('No data loaded');
+        }
+        referenceData = data;
+        console.log(`Reference data loaded for ${participantId}: ${data.length} frames`);
+        
+        // Don't initialize visualizations yet - wait for step 2
+        document.getElementById('next-btn').disabled = false;
+    } catch (error) {
+        console.error('Error loading reference data:', error);
+        alert(`Error loading participant data: ${error.message}. Please make sure the file ${participantId}.csv exists and try again.`);
+    }
+}
+
+// Modify the loadParticipantMetadata function
+async function loadParticipantMetadata() {
+    try {
+        const data = await d3.csv('subject_metadata.csv');
+        participantMetadata = data;
+    } catch (error) {
+        console.error('Error loading participant metadata:', error);
+        alert('Error loading participant metadata. Please try again.');
+    }
+}

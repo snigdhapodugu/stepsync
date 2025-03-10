@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Walking Therapy Visualization</title>
+    <title>Stepping Into Your Walking Journey</title>
     <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- D3.js for visualization -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <!-- OpenCV.js -->
@@ -18,36 +19,56 @@
 <body>
     <div class="container">
         <header>
-            <h1>Physical Therapy From Your Own Home</h1>
+            <h1>Stepping Into Your Walking Journey</h1>
         </header>
         
         <!-- Step content moved to top -->
         <div class="step-content">
-            <div class="step" id="step1">
-                <h2>Welcome to Your Walking Journey</h2>
-                <div class="intro-content">
-                    <p class="intro-text">
-                        Welcome to an interactive guide that will help you understand and improve your walking mechanics. 
-                        This tool uses advanced motion tracking to analyze your movement and provide real-time feedback.
-                    </p>
-                    <p class="intro-highlight">
-                        On the left, you can see a reference model demonstrating proper walking form. 
-                        Watch how different body parts work together to create smooth, efficient movement.
-                    </p>
-                    <div class="intro-features">
-                        <h3>What You'll Learn:</h3>
-                        <ul>
-                            <li>Proper foot placement and movement patterns</li>
-                            <li>Knee and hip alignment during walking</li>
-                            <li>Core stability and posture</li>
-                            <li>Upper body coordination</li>
-                            <li>Overall balance and rhythm</li>
-                        </ul>
+            <div id="step1" class="step">
+                <div class="welcome-box">
+                    <h2>Welcome to Your Walking Journey</h2>
+                    <div class="intro-content">
+                        <p class="intro-text">
+                            Welcome to an interactive guide that will help you understand and improve your walking mechanics. 
+                            This tool uses advanced motion tracking to analyze your movement and provide real-time feedback.
+                        </p>
+                        <p class="intro-highlight">
+                            On the left, you can see a reference model demonstrating proper walking form. 
+                            Watch how different body parts work together to create smooth, efficient movement.
+                        </p>
+                        <div class="intro-features">
+                            <h3>What You'll Learn:</h3>
+                            <ul>
+                                <li>Proper foot placement and movement patterns</li>
+                                <li>Knee and hip alignment during walking</li>
+                                <li>Core stability and posture</li>
+                                <li>Upper body coordination</li>
+                                <li>Overall balance and rhythm</li>
+                            </ul>
+                        </div>
+                        <p class="intro-next">
+                            Click Next to begin your step-by-step analysis, where you'll be able to compare your 
+                            movement with the reference model using your camera.
+                        </p>
                     </div>
-                    <p class="intro-next">
-                        Click 'Next' to begin your step-by-step analysis, where you'll be able to compare your 
-                        movement with the reference model using your camera.
-                    </p>
+                </div>
+                
+                <div id="participant-selection" class="participant-box">
+                    <h2>Find Your Matching Participant</h2>
+                    <p class="description">Please select your gender and enter your BMI to find the most similar participant.</p>
+                    <p class="bmi-help">BMI = weight (kg) / height (m)²<br>Example: 70kg / (1.75m)² = 22.9</p>
+                    
+                    <div class="form-container">
+                        <select id="gender-select">
+                            <option value="">Select Gender</option>
+                            <option value="M">Male</option>
+                            <option value="F">Female</option>
+                        </select>
+                        
+                        <input type="number" id="bmi-input" placeholder="Enter your BMI">
+                        
+                        <button id="find-match-btn">Match Me!</button>
+                    </div>
                 </div>
             </div>
             <div class="step" id="step2" style="display: none;">
@@ -115,6 +136,7 @@
                 </div>
             </div>
             <div class="camera-container" style="display: none;">
+                <h3 class="camera-title">Your Movement</h3>
                 <video id="camera-feed" autoplay playsinline></video>
                 <canvas id="pose-canvas"></canvas>
             </div>
