@@ -141,8 +141,8 @@ header h1 {
 .main-content {
     display: flex;
     gap: 20px;
-    /* margin-bottom: 50px; */
-    /* margin-top: 25px; */
+    margin-bottom: 50px;
+    margin-top: 25px;
 }
 
 /* Visualization container */
@@ -227,7 +227,7 @@ header h1 {
 
 /* Controls for navigation */
 .controls {
-    padding-top: 10px;
+    /* padding-top: 10px; */
     display: flex;
     justify-content: center;
     gap: 20px;
