@@ -152,7 +152,7 @@ header h1 {
     justify-content: space-between;
     width: 100%;
     min-height: 500px;
-    margin: 0;
+    margin: 20px 0 0 0;
 }
 
 /* Camera container */
@@ -169,6 +169,7 @@ header h1 {
     display: flex;
     flex-direction: column;
     position: relative;
+    margin: 0;
 }
 
 .camera-container:hover {
