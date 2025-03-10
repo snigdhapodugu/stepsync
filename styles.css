@@ -233,7 +233,7 @@ header h1 {
 
 /* Controls for navigation */
 .controls {
-    /* padding-top: 10px; */
+    padding-top: 10px;
     display: flex;
     justify-content: center;
     gap: 20px;
