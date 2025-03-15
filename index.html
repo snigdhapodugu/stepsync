@@ -55,8 +55,8 @@
                 
                 <div id="participant-selection" class="participant-box">
                     <h2>Find Your Matching Participant</h2>
-                    <p class="description">Please select your gender and enter your BMI to find the most similar participant.</p>
-                    <p class="bmi-help">BMI = weight (kg) / height (m)²<br>Example: 70kg / (1.75m)² = 22.9</p>
+                    <p class="description">Please select your gender and enter your measurements to find the most similar participant.</p>
+                    <p class="measurement-help">Enter your measurements in US units (inches and pounds)</p>
                     
                     <div class="form-container">
                         <select id="gender-select">
@@ -65,7 +65,8 @@
                             <option value="F">Female</option>
                         </select>
                         
-                        <input type="number" id="bmi-input" placeholder="Enter your BMI">
+                        <input type="number" id="weight-input" placeholder="Enter your weight (lbs)" step="1">
+                        <input type="number" id="height-input" placeholder="Enter your height (inches)" step="1">
                         
                         <button id="find-match-btn">Match Me!</button>
                     </div>

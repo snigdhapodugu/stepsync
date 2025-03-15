@@ -730,7 +730,7 @@ function drawPoseOnCanvas(results, canvas) {
     const canvasHeight = canvas.height;
     
     // Set up styles - single color for all elements
-    const color = '#3498db';
+    const color = '#e74c3c';
     
     // Draw pose connections (excluding face)
     const connections = [
@@ -824,37 +824,50 @@ function convertMediaPipePoseToSkeleton(results) {
         28: 'right_foot' // right_ankle
     };
     
-    // Convert landmarks to our format
+    // Get video dimensions for proper scaling
+    const videoElement = document.getElementById('camera-feed');
+    const videoWidth = videoElement.videoWidth || videoElement.width;
+    const videoHeight = videoElement.videoHeight || videoElement.height;
+    
+    // Convert landmarks to our format with proper scaling
     Object.entries(mapping).forEach(([index, jointName]) => {
         const landmark = landmarks[index];
         if (landmark.visibility > 0.5) {
+            // Scale coordinates to match our visualization space
+            // MediaPipe gives coordinates in [0,1] range, we need to scale them appropriately
             skeleton[`${jointName}_x`] = landmark.x;
-            skeleton[`${jointName}_y`] = landmark.y;
+            // Flip Y coordinate since MediaPipe uses top-left origin and we use bottom-left
+            skeleton[`${jointName}_y`] = 1 - landmark.y;
         }
     });
     
-    // Add derived points (same as before)
+    // Add derived points with proper scaling
     // Neck - midpoint between shoulders
     if (skeleton['left_shoulder_x'] && skeleton['right_shoulder_x']) {
         skeleton['neck_x'] = (skeleton['left_shoulder_x'] + skeleton['right_shoulder_x']) / 2;
-        skeleton['neck_y'] = (skeleton['left_shoulder_y'] + skeleton['right_shoulder_y']) / 2 - 0.02;
+        skeleton['neck_y'] = (skeleton['left_shoulder_y'] + skeleton['right_shoulder_y']) / 2 + 0.05; // Adjust neck position up slightly
     }
     
-    // Pelvis - midpoint between hips
+    // Pelvis - midpoint between hips with adjusted height
     if (skeleton['left_upper_leg_x'] && skeleton['right_upper_leg_x']) {
         skeleton['pelvis_x'] = (skeleton['left_upper_leg_x'] + skeleton['right_upper_leg_x']) / 2;
         skeleton['pelvis_y'] = (skeleton['left_upper_leg_y'] + skeleton['right_upper_leg_y']) / 2;
     }
     
-    // Spine points
+    // Spine points with adjusted spacing
     if (skeleton['neck_x'] && skeleton['pelvis_x']) {
         const spinePoints = ['t8', 't12', 'l3', 'l5'];
         const totalPoints = spinePoints.length + 1;
+        const spineLength = skeleton['neck_y'] - skeleton['pelvis_y'];
         
         spinePoints.forEach((joint, index) => {
             const ratio = (index + 1) / totalPoints;
+            // Use linear interpolation for X coordinates
             skeleton[`${joint}_x`] = skeleton['neck_x'] * (1 - ratio) + skeleton['pelvis_x'] * ratio;
-            skeleton[`${joint}_y`] = skeleton['neck_y'] * (1 - ratio) + skeleton['pelvis_y'] * ratio;
+            // Use curved interpolation for Y coordinates to create more natural spine curve
+            const t = ratio;
+            const curveY = t * t * (3 - 2 * t); // Smoothstep interpolation for more natural curve
+            skeleton[`${joint}_y`] = skeleton['neck_y'] - (spineLength * curveY);
         });
     }
     
@@ -966,23 +979,33 @@ window.addEventListener('load', () => {
     updateStep(0);
 });
 
-// Function to calculate BMI
-function calculateBMI(weight, height) {
-    return weight / (height * height);
+// Conversion functions
+function inchesToMeters(inches) {
+    return inches * 0.0254; // 1 inch = 0.0254 meters
 }
 
-// Function to find closest participant based on gender and BMI
-function findClosestParticipant(gender, targetBMI) {
+function poundsToKilograms(pounds) {
+    return pounds * 0.45359237; // 1 pound = 0.45359237 kilograms
+}
+
+// Function to find closest participant based on gender, weight and height
+function findClosestParticipant(gender, weightLbs, heightInches) {
     let closestParticipant = null;
-    let minBMIDiff = Infinity;
+    let minDiff = Infinity;
+
+    // Convert to metric
+    const weightKg = poundsToKilograms(weightLbs);
+    const heightM = inchesToMeters(heightInches);
 
     participantMetadata.forEach(participant => {
         if (participant.Gender === gender) {
-            const participantBMI = calculateBMI(participant['Body mass (kg)'], participant['Body height (m)']);
-            const bmiDiff = Math.abs(participantBMI - targetBMI);
+            const weightDiff = Math.abs(participant['Body mass (kg)'] - weightKg);
+            const heightDiff = Math.abs(participant['Body height (m)'] - heightM);
+            // Normalize differences since weight and height are in different scales
+            const normalizedDiff = (weightDiff / 20) + (heightDiff / 0.2); // Normalize to similar scales
             
-            if (bmiDiff < minBMIDiff) {
-                minBMIDiff = bmiDiff;
+            if (normalizedDiff < minDiff) {
+                minDiff = normalizedDiff;
                 closestParticipant = participant;
             }
         }
@@ -991,15 +1014,48 @@ function findClosestParticipant(gender, targetBMI) {
     return closestParticipant;
 }
 
+// Conversion functions for display (metric to US)
+function metersToInches(meters) {
+    return Math.round(meters * 39.3701); // 1 meter = 39.3701 inches
+}
+
+function kilogramsToPounds(kg) {
+    return Math.round(kg * 2.20462); // 1 kg = 2.20462 pounds
+}
+
+function formatParticipantInfo(participant) {
+    const heightInches = metersToInches(parseFloat(participant['Body height (m)']));
+    const heightFeet = Math.floor(heightInches / 12);
+    const remainingInches = heightInches % 12;
+    const weightLbs = kilogramsToPounds(parseFloat(participant['Body mass (kg)']));
+    
+    return `
+        <div class="participant-info">
+            <h3>Matched Participant Details:</h3>
+            <ul>
+                <li><strong>Height:</strong> ${heightFeet}'${remainingInches}" (${participant['Body height (m)']}m)</li>
+                <li><strong>Weight:</strong> ${weightLbs} lbs (${participant['Body mass (kg)']}kg)</li>
+                <li><strong>Gender:</strong> ${participant.Gender === 'M' ? 'Male' : 'Female'}</li>
+                <li><strong>Shoulder Width:</strong> ${participant['Shoulder Width']}m</li>
+                <li><strong>Arm Span:</strong> ${participant['Arm Span']}m</li>
+                <li><strong>Hip Width:</strong> ${participant['Hip Width']}m</li>
+                <li><strong>Knee Height:</strong> ${participant['Knee Height']}m</li>
+                <li><strong>Ankle Height:</strong> ${participant['Ankle Height']}m</li>
+            </ul>
+        </div>
+    `;
+}
+
 // Remove the createParticipantSelectionUI function and replace with a function to initialize the form
 function initializeParticipantSelection() {
     const genderSelect = document.getElementById('gender-select');
-    const bmiInput = document.getElementById('bmi-input');
+    const weightInput = document.getElementById('weight-input');
+    const heightInput = document.getElementById('height-input');
     const findMatchBtn = document.getElementById('find-match-btn');
     const participantForm = document.getElementById('participant-selection');
     
     // Add consistent styling to form elements
-    const formElements = [genderSelect, bmiInput, findMatchBtn];
+    const formElements = [genderSelect, weightInput, heightInput, findMatchBtn];
     formElements.forEach(element => {
         element.style.cssText = `
             width: 100%;
@@ -1035,7 +1091,7 @@ function initializeParticipantSelection() {
     };
 
     // Add focus styles for input and select
-    [genderSelect, bmiInput].forEach(element => {
+    [genderSelect, weightInput, heightInput].forEach(element => {
         element.onfocus = () => {
             element.style.borderColor = '#3498db';
             element.style.boxShadow = '0 0 0 3px rgba(52, 152, 219, 0.1)';
@@ -1048,32 +1104,89 @@ function initializeParticipantSelection() {
 
     findMatchBtn.addEventListener('click', () => {
         const gender = genderSelect.value;
-        const bmi = parseFloat(bmiInput.value);
+        const weightLbs = parseFloat(weightInput.value);
+        const heightInches = parseFloat(heightInput.value);
         
-        if (!gender || isNaN(bmi)) {
-            alert('Please select gender and enter a valid BMI');
+        if (!gender || isNaN(weightLbs) || isNaN(heightInches)) {
+            alert('Please select gender and enter valid weight and height values');
             return;
         }
 
-        selectedParticipant = findClosestParticipant(gender, bmi);
+        if (weightLbs <= 0 || heightInches <= 0) {
+            alert('Weight and height must be positive values');
+            return;
+        }
+
+        // Reasonable ranges for height in inches (36" to 96" = 3' to 8')
+        if (heightInches < 36 || heightInches > 96) {
+            alert('Please enter a reasonable height in inches (36" to 96")');
+            return;
+        }
+
+        // Reasonable range for weight in pounds (50 to 500 lbs)
+        if (weightLbs < 50 || weightLbs > 500) {
+            alert('Please enter a reasonable weight in pounds (50 to 500 lbs)');
+            return;
+        }
+
+        selectedParticipant = findClosestParticipant(gender, weightLbs, heightInches);
         if (selectedParticipant) {
             loadParticipantData(selectedParticipant['Participant ID']);
             // Just enable the next button, don't show visualization yet
             document.getElementById('next-btn').disabled = false;
             
-            // Show success message
-            const successMsg = document.createElement('p');
-            successMsg.textContent = 'Participant matched! Click Next to continue.';
+            // Create success message with participant info
+            const successMsg = document.createElement('div');
             successMsg.className = 'success-message intro-next';
+            successMsg.innerHTML = `
+                <p>Participant matched successfully!</p>
+                ${formatParticipantInfo(selectedParticipant)}
+                <p class="next-prompt">Click Next to continue.</p>
+            `;
+            
+            // Add styles for the success message
             successMsg.style.cssText = `
                 font-size: 1.1rem;
                 color: #2c3e50;
-                padding: 15px;
+                padding: 20px;
                 background-color: rgba(46, 204, 113, 0.1);
                 border-radius: 8px;
-                margin-top: 10px;
-                text-align: center;
+                margin-top: 20px;
             `;
+            
+            // Add styles for the participant info
+            const style = document.createElement('style');
+            style.textContent = `
+                .participant-info {
+                    margin: 15px 0;
+                    padding: 15px;
+                    background-color: rgba(255, 255, 255, 0.7);
+                    border-radius: 6px;
+                }
+                .participant-info h3 {
+                    margin: 0 0 10px 0;
+                    color: #2c3e50;
+                    font-size: 1.1rem;
+                }
+                .participant-info ul {
+                    list-style: none;
+                    padding: 0;
+                    margin: 0;
+                }
+                .participant-info li {
+                    margin: 8px 0;
+                    font-size: 0.95rem;
+                }
+                .participant-info strong {
+                    color: #2980b9;
+                }
+                .next-prompt {
+                    margin-top: 15px;
+                    font-weight: 600;
+                    color: #27ae60;
+                }
+            `;
+            document.head.appendChild(style);
             
             // Remove any existing success message
             const existingMsg = participantForm.querySelector('.success-message');
