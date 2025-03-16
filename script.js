@@ -1234,12 +1234,12 @@ function initializeParticipantSelection() {
         }
     }
     weightInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || e.key === 'Return') {
             heightInput.focus();
         }
     });
     heightInput.addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || e.key === 'Return') {
             next(genderSelect,  weightInput, heightInput);
             document.getElementById('next-btn').focus();
         }
