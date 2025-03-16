@@ -1229,7 +1229,7 @@ function initializeParticipantSelection() {
     }
     weightInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
-            next(genderSelect,  weightInput, weightInput);
+            heightInput.focus();
         }
     });
     heightInput.addEventListener('keypress', function (e) {
