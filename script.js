@@ -1123,7 +1123,7 @@ function initializeParticipantSelection() {
         };
     });
 
-    findMatchBtn.addEventListener('click', () => {
+    function next(genderSelect,  weightInput, heightInput) {
         const gender = genderSelect.value;
         const weightLbs = parseFloat(weightInput.value);
         const heightInches = parseFloat(heightInput.value);
@@ -1226,6 +1226,15 @@ function initializeParticipantSelection() {
         } else {
             alert('No matching participant found. Please try different criteria.');
         }
+    }
+
+    heightInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            next(genderSelect,  weightInput, heightInput);
+        }
+    });
+    findMatchBtn.addEventListener('click', () => {
+        next(genderSelect,  weightInput, heightInput);
     });
 }
 
