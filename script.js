@@ -150,7 +150,7 @@ function updateVisualization(frameIndex = 0) {
     // Add padding to the bounds
     const padding = focusJoints ? 0.2 : 0.1; // More padding for zoomed views
     
-    const scale = 0.7 * Math.min(
+    const scale = 0.6 * Math.min(
         (width * (1 - padding*2)) / dataWidth,
         (height * (1 - padding*2)) / dataHeight
     );
@@ -380,8 +380,8 @@ function updateStep(direction) {
     const participantForm = document.getElementById('participant-selection');
     const mainContent = document.querySelector('.main-content');
     
-    if (currentStep === 1 || currentStep === 8) {
-        // First page: hide visualization, try-it button, and main content
+    if (currentStep === 1) {
+        // First page: show participant form, hide everything else
         tryItBtn.style.display = 'none';
         mainContent.style.display = 'none';
         participantForm.style.display = 'block';
@@ -402,8 +402,29 @@ function updateStep(direction) {
         visualizationContainer.style.justifyContent = 'space-between';
         document.getElementById('reference-vis').style.display = 'none';
         document.getElementById('user-vis').style.display = 'none';
+    } else if (currentStep === 8) {
+        // Last page: hide everything except step 8 content
+        tryItBtn.style.display = 'none';
+        mainContent.style.display = 'none';
+        participantForm.style.display = 'none';
+        
+        // Stop camera if recording
+        if (isRecording) {
+            stopCamera();
+        }
+        
+        // Stop animation if playing
+        if (animationFrame) {
+            cancelAnimationFrame(animationFrame);
+            isPlaying = false;
+        }
+        
+        // Reset visualization container state
+        visualizationContainer.style.display = 'none';
+        document.getElementById('reference-vis').style.display = 'none';
+        document.getElementById('user-vis').style.display = 'none';
     } else {
-        // Other pages: show visualization, try-it button, and main content
+        // Other pages (2-7): show visualization, try-it button, and main content
         tryItBtn.style.display = 'inline-block';
         mainContent.style.display = 'flex';
         visualizationContainer.style.display = 'flex';
