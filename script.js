@@ -1227,7 +1227,11 @@ function initializeParticipantSelection() {
             alert('No matching participant found. Please try different criteria.');
         }
     }
-
+    weightInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            next(genderSelect,  weightInput, weightInput);
+        }
+    });
     heightInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             next(genderSelect,  weightInput, heightInput);
