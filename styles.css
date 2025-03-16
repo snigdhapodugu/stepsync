@@ -362,3 +362,7 @@ button:disabled {
 .skeleton circle.active {
     animation: pulse 1.5s infinite;
 }
+
+#next-btn:focus {
+    border: 0px;
+}

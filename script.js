@@ -449,6 +449,7 @@ function updateStep(direction) {
     if (currentStep > 1 && currentStep < 8) {
         updateVisualization(currentFrameIndex);
     }
+    document.getElementById('next-btn').blur();
 }
 
 // Camera handling
@@ -967,6 +968,11 @@ function togglePlayback() {
 // Event listeners
 document.getElementById('back-btn').addEventListener('click', () => updateStep(-1));
 document.getElementById('next-btn').addEventListener('click', () => updateStep(1));
+document.getElementById('next-btn').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
+        updateStep(1);
+    }
+});
 document.getElementById('try-it-btn').addEventListener('click', toggleCamera);
 
 // Add window load event to ensure DOM is fully loaded
@@ -1235,6 +1241,7 @@ function initializeParticipantSelection() {
     heightInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             next(genderSelect,  weightInput, heightInput);
+            document.getElementById('next-btn').focus();
         }
     });
     findMatchBtn.addEventListener('click', () => {
