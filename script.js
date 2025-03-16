@@ -1162,10 +1162,9 @@ function initializeParticipantSelection() {
             successMsg.innerHTML = `
                 <p>Participant matched successfully!</p>
                 <p class="intro-next">
-                            Congratulations, you have been matched! Now you'll see how your body moves in real-time,
-                            compared to optimal movement patterns from our database of 14 healthy patients. This is the
-                            kind of analysis typically available only in clinical settings. Click Next to begin your
-                            step-by-step analysis, where you'll be able to compare your 
+                            You have been matched! You will now see how your body moves in real-time,
+                            compared to optimal movement patterns from our database of 14 healthy patients. Click Next to begin your
+                            step-by-step analysis, where you will be able to compare your 
                             movement with the reference model using your camera.
                         </p>
                 ${formatParticipantInfo(selectedParticipant)}
