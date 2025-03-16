@@ -1,6 +1,6 @@
 // Global variables
 let currentStep = 1;
-const totalSteps = 7;
+const totalSteps = 8;
 let isRecording = false;
 let stream = null;
 let referenceData = [];
@@ -380,7 +380,7 @@ function updateStep(direction) {
     const participantForm = document.getElementById('participant-selection');
     const mainContent = document.querySelector('.main-content');
     
-    if (currentStep === 1) {
+    if (currentStep === 1 || currentStep === 8) {
         // First page: hide visualization, try-it button, and main content
         tryItBtn.style.display = 'none';
         mainContent.style.display = 'none';
@@ -425,7 +425,7 @@ function updateStep(direction) {
     }
     
     // Update visualization focus
-    if (currentStep > 1) {
+    if (currentStep > 1 && currentStep < 8) {
         updateVisualization(currentFrameIndex);
     }
 }
@@ -1140,6 +1140,13 @@ function initializeParticipantSelection() {
             successMsg.className = 'success-message intro-next';
             successMsg.innerHTML = `
                 <p>Participant matched successfully!</p>
+                <p class="intro-next">
+                            Congratulations, you have been matched! Now you'll see how your body moves in real-time,
+                            compared to optimal movement patterns from our database of 14 healthy patients. This is the
+                            kind of analysis typically available only in clinical settings. Click Next to begin your
+                            step-by-step analysis, where you'll be able to compare your 
+                            movement with the reference model using your camera.
+                        </p>
                 ${formatParticipantInfo(selectedParticipant)}
                 <p class="next-prompt">Click Next to continue.</p>
             `;
