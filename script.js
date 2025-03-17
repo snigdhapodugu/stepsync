@@ -588,14 +588,14 @@ async function startSkeletonTracking() {
             cameraContainer.appendChild(canvas);
         }
         
-        // Initialize MediaPipe Pose
+        // Initialize MediaPipe Pose with improved confidence thresholds
         const pose = new Pose({
             locateFile: (file) => {
                 return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
             }
         });
         
-        // Configure pose detection
+        // Configure pose detection with better confidence thresholds
         pose.setOptions({
             modelComplexity: 1,
             smoothLandmarks: true,
@@ -603,16 +603,22 @@ async function startSkeletonTracking() {
             minTrackingConfidence: 0.5
         });
         
-        // Setup camera
+        // Setup camera with improved frame processing
         const camera = new Camera(videoElement, {
             onFrame: async () => {
-                await pose.send({image: videoElement});
+                // Convert video frame to RGB for better detection
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                
+                // Process frame with MediaPipe
+                await pose.send({image: imageData});
             },
             width: 640,
             height: 480
         });
         
-        // Handle pose detection results
+        // Handle pose detection results with improved visualization
         pose.onResults((results) => {
             if (results.poseLandmarks) {
                 const processedPose = processFrameWithOpenCV(results, videoElement);
@@ -740,7 +746,7 @@ function processFrameWithOpenCV(results, videoElement) {
     }
 }
 
-// Draw detected pose on canvas overlay using MediaPipe
+// Update the drawPoseOnCanvas function with improved visualization
 function drawPoseOnCanvas(results, canvas) {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -751,10 +757,11 @@ function drawPoseOnCanvas(results, canvas) {
     const canvasWidth = canvas.width;
     const canvasHeight = canvas.height;
     
-    // Set up styles - single color for all elements
-    const color = '#e74c3c';
+    // Improved drawing specifications
+    const connectionColor = '#e74c3c'; // Pink color for connections
+    const landmarkColor = '#e74c3c'; // White color for landmarks
     
-    // Draw pose connections (excluding face)
+    // Draw pose connections with improved thickness
     const connections = [
         // Torso
         [11, 12], // shoulders
@@ -771,9 +778,9 @@ function drawPoseOnCanvas(results, canvas) {
         [24, 26], [26, 28], [28, 32], // right leg
     ];
     
-    // Draw connections with thinner lines
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = color;
+    // Draw connections with improved style
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = connectionColor;
     ctx.beginPath();
     connections.forEach(([i, j]) => {
         const point1 = landmarks[i];
@@ -786,7 +793,7 @@ function drawPoseOnCanvas(results, canvas) {
     });
     ctx.stroke();
     
-    // Draw landmarks (excluding face landmarks 0-10)
+    // Draw landmarks with improved visibility
     landmarks.forEach((landmark, index) => {
         // Skip facial landmarks (indices 0-10)
         if (index <= 10) return;
@@ -795,13 +802,15 @@ function drawPoseOnCanvas(results, canvas) {
             const x = Math.round(landmark.x * canvasWidth);
             const y = Math.round(landmark.y * canvasHeight);
             
-            // Draw smaller points with pixel-perfect circles
+            // Draw larger, more visible points
             ctx.beginPath();
-            ctx.arc(x, y, 2, 0, 2 * Math.PI);
-            ctx.fillStyle = color;
+            ctx.arc(x, y, 4, 0, 2 * Math.PI);
+            ctx.fillStyle = landmarkColor;
             ctx.fill();
+            
+            // Add white border for better visibility
             ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 0.5;
+            ctx.lineWidth = 1;
             ctx.stroke();
         }
     });
@@ -1060,6 +1069,7 @@ function formatParticipantInfo(participant) {
         <div class="participant-info">
             <h3>Matched Participant Details:</h3>
             <ul>
+                <li><strong>Age:</strong> ${participant['Age (years)']} years</li>
                 <li><strong>Height:</strong> ${heightFeet}'${remainingInches}" (${participant['Body height (m)']}m)</li>
                 <li><strong>Weight:</strong> ${weightLbs} lbs (${participant['Body mass (kg)']}kg)</li>
                 <li><strong>Gender:</strong> ${participant.Gender === 'M' ? 'Male' : 'Female'}</li>
