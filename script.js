@@ -449,7 +449,6 @@ function updateStep(direction) {
     if (currentStep > 1 && currentStep < 8) {
         updateVisualization(currentFrameIndex);
     }
-    document.getElementById('next-btn').blur();
 }
 
 // Camera handling
