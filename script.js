@@ -978,7 +978,8 @@ document.getElementById('back-btn').addEventListener('click', () => updateStep(-
 document.getElementById('next-btn').addEventListener('click', () => updateStep(1));
 document.getElementById('next-btn').addEventListener('keypress', function (e) {
     if (e.key === 'Enter') {
-        updateStep(1);
+        updateStep(0);
+        document.getElementById('next-btn').focus();
     }
 });
 document.getElementById('try-it-btn').addEventListener('click', toggleCamera);
