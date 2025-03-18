@@ -366,5 +366,5 @@ button:disabled {
 }
 
 #next-btn:focus {
-    border: 0px;
+    outline: 0px;
 }
